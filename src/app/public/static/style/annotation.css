@@ -18,16 +18,16 @@
   flex-direction: row;
   z-index: 20;
   width: calc(100% - 190px);
-  height: 200px;
+  height: 300px;
   margin-right: 10px;
   left: 0;
-  top: calc(100% - 140px);
+  top: calc(100% - 240px);
   padding-bottom: 10px;
 }
 
 .annotator-space {
   width: calc(100% - 190px);
-  height: calc(100% - 150px);
+  height: calc(100% - 250px);
   margin-right: 10px;
 }
 
@@ -398,4 +398,20 @@
 
 :focus:not(button, input) {
   outline: none !important;
+}
+
+.bottom-bar-btns-wrapper {
+  height: 40px;
+  background-color: #394B59;
+  position: absolute;
+  top: -38px;
+  left: 0;
+  padding: 8px 4px 2px 4px;
+  border: 1px solid #182026;
+  border-bottom: 0;
+}
+
+.bottom-bar-btn {
+  float: left;
+  margin: 0 5px;
 }

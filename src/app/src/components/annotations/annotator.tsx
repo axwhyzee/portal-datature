@@ -4,7 +4,7 @@
 /* eslint-disable no-prototype-builtins */
 import * as L from "leaflet";
 import "leaflet-draw";
-import React, { Component } from "react";
+import React, { Component, useCallback } from "react";
 import {
   Card,
   HotkeysTarget,
@@ -49,6 +49,7 @@ import FileModal from "./filemodal";
 import AnnotatorSettings from "./utils/annotatorsettings";
 import FormatTimerSeconds from "./utils/timer";
 import { RegisteredModel } from "./model";
+import Timeline from "./timeline";
 
 type Point = [number, number];
 type MapType = L.DrawMap;
@@ -148,6 +149,9 @@ interface AnnotatorState {
     opacity: number;
   };
   currAnnotationPlaybackId: number;
+  allAnnotations: object;
+  bottomBarTabIndex: number;
+  fps: number;
 }
 
 /**
@@ -246,6 +250,9 @@ export default class Annotator extends Component<
         },
       },
       currAnnotationPlaybackId: 0,
+      allAnnotations: {},
+      bottomBarTabIndex: 0,
+      fps: 0
     };
 
     this.toaster = new Toaster({}, {});
@@ -304,6 +311,7 @@ export default class Annotator extends Component<
     this.setAnnotationOptions = this.setAnnotationOptions.bind(this);
     this.toggleShowSelected = this.toggleShowSelected.bind(this);
     this.setAnnotatedAssetsHidden = this.setAnnotatedAssetsHidden.bind(this);
+    this.videoSeekCallback = this.videoSeekCallback.bind(this);
   }
 
   async componentDidMount(): Promise<void> {
@@ -786,6 +794,9 @@ export default class Annotator extends Component<
         this.state.inferenceOptions.iou
       )
         .then(response => {
+          this.setState({allAnnotations: response.data.frames});
+          this.setState({fps: response.data.fps});
+
           if (this.currentAsset.url === asset.url && singleAnalysis) {
             const videoElement = this.videoOverlay.getElement();
             /**
@@ -1535,6 +1546,10 @@ export default class Annotator extends Component<
     );
   }
 
+  public videoSeekCallback(t: number) {
+    this.videoOverlay.getElement().currentTime = t;
+  }
+
   render(): JSX.Element {
     /* Prefix for Dynamic Styling of Collapsing Image List */
     const collapsedButtonTheme = this.props.useDarkTheme ? "" : "light-";
@@ -1545,7 +1560,7 @@ export default class Annotator extends Component<
       this.isAssetVisible()
     );
 
-    return (
+    return (  
       <div>
         <Toaster {...this.state} ref={this.refHandlers.toaster} />
         <div className={"workspace"}>
@@ -1569,20 +1584,42 @@ export default class Annotator extends Component<
                 ""
               )}
             />
+            <div className="bottom-bar-btns-wrapper">
+                <Button 
+                  className="bottom-bar-btn"
+                  onClick={()=>{this.setState({bottomBarTabIndex: 0})}}
+                  text="Assets"
+                />
+                <Button 
+                  className="bottom-bar-btn"
+                  onClick={()=>{this.setState({bottomBarTabIndex: 1})}}
+                  text="Timeline"
+                />
+            </div>
             {/* Appends Styling Prefix */}
             <Card
               className={[isCollapsed, "image-bar"].join("")}
               id={"image-bar"}
             >
-              <ImageBar
-                ref={ref => {
-                  this.imagebarRef = ref;
-                }}
-                /* Only visible assets should be shown */
-                assetList={visibleAssets}
-                callbacks={{ selectAssetCallback: this.selectAsset }}
-                {...this.props}
-              />
+              { this.state.bottomBarTabIndex == 0 ? 
+              (
+                <ImageBar
+                  ref={ref => {
+                    this.imagebarRef = ref;
+                  }}
+                  /* Only visible assets should be shown */
+                  assetList={visibleAssets}
+                  callbacks={{ selectAssetCallback: this.selectAsset }}
+                  {...this.props}
+                />
+              ) : (
+                <Timeline
+                  /* Only visible assets should be shown */
+                  annotations={this.state.allAnnotations}
+                  confidence={this.state.confidence}
+                  videoSeekCallback={this.videoSeekCallback}
+                />
+              )}
             </Card>
           </div>
 
